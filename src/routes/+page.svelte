@@ -1,4 +1,3 @@
-// src/routes/+page.svelte
 <script>
 	import { onMount } from 'svelte';
 
@@ -24,7 +23,11 @@
 	let totalChars = 0;
 	let gameActive = false;
 	let intervalId;
-	let highScore = 0;
+	let users = [];
+	let currentUser = null;
+	let newUsername = '';
+
+	const appleEmojis = ['🍎', '🍏', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅'];
 
 	function shuffleArray(array) {
 		for (let i = array.length - 1; i > 0; i--) {
@@ -52,7 +55,33 @@
 		return sentences.pop();
 	}
 
+	function addUser() {
+		if (newUsername.trim()) {
+			const randomEmoji = appleEmojis[Math.floor(Math.random() * appleEmojis.length)];
+			const newUser = {
+				name: newUsername.trim(),
+				emoji: randomEmoji,
+				highScore: 0
+			};
+			users = [...users, newUser];
+			newUsername = '';
+			currentUser = newUser;
+		}
+	}
+
+	function selectUser(user) {
+		currentUser = user;
+	}
+
+	function deleteUser(userToDelete) {
+		users = users.filter(user => user !== userToDelete);
+		if (currentUser === userToDelete) {
+			currentUser = null;
+		}
+	}
+
 	function startGame() {
+		if (!currentUser) return;
 		gameActive = true;
 		characterCount = 0;
 		correctChars = 0;
@@ -72,8 +101,9 @@
 	function endGame() {
 		clearInterval(intervalId);
 		gameActive = false;
-		if (characterCount > highScore) {
-			highScore = characterCount;
+		if (characterCount > currentUser.highScore) {
+			currentUser.highScore = characterCount;
+			users = users; // Trigger reactivity
 		}
 	}
 
@@ -87,6 +117,7 @@
 		inputValue = '';
 		currentSentence = '';
 		nextSentence = '';
+		currentUser = null;
 	}
 
 	function handleInput(event) {
@@ -130,10 +161,42 @@
 		<h1 class="text-4xl font-bold mb-6 text-center text-primary">Speed Typing Game</h1>
 
 		{#if !gameActive}
-			<div class="text-center space-y-4">
-				<button class="btn btn-primary btn-lg" on:click={startGame}>Start Game</button>
-				{#if highScore > 0}
-					<p class="text-xl">High Score: {highScore} characters</p>
+			<div class="space-y-4">
+				<h2 class="text-2xl font-semibold mb-2">Players</h2>
+				<div class="flex flex-wrap gap-2 mb-4">
+					{#each users as user}
+						<div class="flex items-center">
+							<button
+								class="btn btn-outline btn-sm {currentUser === user ? 'btn-primary' : ''}"
+								on:click={() => selectUser(user)}
+							>
+								{user.emoji} {user.name} (High: {user.highScore})
+							</button>
+							<button
+								class="btn btn-error btn-sm ml-1"
+								on:click={() => deleteUser(user)}
+							>
+								X
+							</button>
+						</div>
+					{/each}
+				</div>
+				<div class="flex gap-2">
+					<input
+						type="text"
+						bind:value={newUsername}
+						placeholder="Enter new username"
+						class="input input-bordered flex-grow"
+					/>
+					<button class="btn btn-primary" on:click={addUser}>Add Player</button>
+				</div>
+				{#if currentUser}
+					<div class="text-center mt-4">
+						<p class="text-xl mb-2">Playing as: {currentUser.emoji} {currentUser.name}</p>
+						<button class="btn btn-primary btn-lg" on:click={startGame}>Start Game</button>
+					</div>
+				{:else}
+					<p class="text-center text-lg text-gray-600">Select or add a player to start the game</p>
 				{/if}
 			</div>
 		{:else}
@@ -193,7 +256,7 @@
 				<p class="text-xl mb-2">WPM: {wpm}</p>
 				<p class="text-xl mb-4">Overall Accuracy: {accuracy}%</p>
 				<button class="btn btn-primary btn-lg mr-2" on:click={startGame}>Play Again</button>
-				<button class="btn btn-secondary btn-lg" on:click={resetGame}>Reset</button>
+				<button class="btn btn-secondary btn-lg" on:click={resetGame}>Change Player</button>
 			</div>
 		{/if}
 	</div>
