@@ -13,7 +13,7 @@
 		"The early bird catches the worm.",
 		"Practice makes perfect."
 	];
-
+	let cacat = "asta e doar de test lol"
 	let currentSentence = '';
 	let nextSentence = '';
 	let inputValue = '';
